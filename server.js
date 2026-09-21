@@ -6,6 +6,7 @@
 
 const http = require("http");
 const { URL } = require("url");
+const ExcelJS = require("exceljs");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -233,7 +234,7 @@ const ADMIN_PAGE = [
   '<div class="toolbar">',
   '<label style="font-size:.75rem;">Tu nombre (juez): <input id="juez" placeholder="Ej: Camilo" style="padding:6px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);"></label>',
   '<button class="ghost" onclick="loadList()">Actualizar</button>',
-  '<a id="export-link" href="#"><button class="ghost">Descargar Excel (CSV)</button></a>',
+  '<a id="export-link" href="#"><button class="ghost">Descargar Excel (.xlsx)</button></a>',
   "</div>",
   '<div id="msg"></div>',
   '<div id="table-wrap"></div>',
@@ -250,7 +251,7 @@ const ADMIN_PAGE = [
   "    if(ok){",
   "      document.getElementById('gate').style.display='none';",
   "      document.getElementById('app').style.display='block';",
-  "      document.getElementById('export-link').href = '/admin/export.csv?pin=' + encodeURIComponent(PIN);",
+  "      document.getElementById('export-link').href = '/admin/export.xlsx?pin=' + encodeURIComponent(PIN);",
   "    } else {",
   "      document.getElementById('gate-msg').textContent = 'PIN incorrecto.';",
   "    }",
@@ -315,25 +316,52 @@ const ADMIN_PAGE = [
   "</body></html>",
 ].join("\n");
 
-function csvEscape(v) {
-  var s = v == null ? "" : String(v);
-  if (/[",\n]/.test(s)) {
-    s = '"' + s.replace(/"/g, '""') + '"';
-  }
-  return s;
-}
+async function buildXlsx(participantes) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Inscritos");
 
-function buildCsv(participantes) {
-  var headers = [
-    "nombre", "tipo_documento", "numero_documento", "telefono", "correo",
-    "ciudad", "instagram", "referencia_pago", "estado", "promedio", "num_votos",
-    "autoriza_imagen", "created_at",
+  sheet.columns = [
+    { header: "Nombre", key: "nombre", width: 28 },
+    { header: "Tipo doc.", key: "tipo_documento", width: 10 },
+    { header: "N\u00B0 documento", key: "numero_documento", width: 16 },
+    { header: "Tel\u00E9fono", key: "telefono", width: 14 },
+    { header: "Correo", key: "correo", width: 28 },
+    { header: "Ciudad", key: "ciudad", width: 16 },
+    { header: "Instagram", key: "instagram", width: 18 },
+    { header: "Referencia de pago", key: "referencia_pago", width: 18 },
+    { header: "Estado", key: "estado", width: 12 },
+    { header: "Promedio", key: "promedio", width: 10 },
+    { header: "N\u00B0 votos", key: "num_votos", width: 10 },
+    { header: "Autoriza imagen", key: "autoriza_imagen", width: 14 },
+    { header: "Fecha inscripci\u00F3n", key: "created_at", width: 22 },
   ];
-  var lines = [headers.join(",")];
-  participantes.forEach(function (p) {
-    lines.push(headers.map(function (h) { return csvEscape(p[h]); }).join(","));
+
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).eachCell(function (cell) {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8422A" } };
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
   });
-  return "\uFEFF" + lines.join("\n");
+
+  participantes.forEach(function (p) {
+    sheet.addRow({
+      nombre: p.nombre,
+      tipo_documento: p.tipo_documento,
+      numero_documento: p.numero_documento,
+      telefono: p.telefono,
+      correo: p.correo,
+      ciudad: p.ciudad,
+      instagram: p.instagram || "",
+      referencia_pago: p.referencia_pago,
+      estado: p.estado,
+      promedio: p.promedio != null ? p.promedio : "",
+      num_votos: p.num_votos,
+      autoriza_imagen: p.autoriza_imagen ? "S\u00ED" : "No",
+      created_at: p.created_at ? new Date(p.created_at).toLocaleString("es-CO") : "",
+    });
+  });
+
+  sheet.autoFilter = { from: "A1", to: "M1" };
+  return workbook.xlsx.writeBuffer();
 }
 
 function sendJson(res, status, data) {
@@ -428,19 +456,19 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, data);
   }
 
-  if (req.method === "GET" && path === "/admin/export.csv") {
+  if (req.method === "GET" && path === "/admin/export.xlsx") {
     const pin = url.searchParams.get("pin") || "";
     const { data, error } = await callRpc("gb_admin_list", { pin });
     if (error || !data || !data.ok) {
       res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
       return res.end("PIN incorrecto o error del servidor");
     }
-    const csv = buildCsv(data.participantes);
+    const buffer = await buildXlsx(data.participantes);
     res.writeHead(200, {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="guerra_bocetos_participantes.csv"',
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": 'attachment; filename="guerra_bocetos_participantes.xlsx"',
     });
-    return res.end(csv);
+    return res.end(buffer);
   }
 
   if (req.method === "GET" && path === "/stats") {
