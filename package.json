@@ -9,6 +9,9 @@
   "scripts": {
     "start": "node server.js"
   },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
   "license": "UNLICENSED",
   "private": true
 }
