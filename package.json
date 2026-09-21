@@ -1,0 +1,14 @@
+{
+  "name": "guerra-de-bocetos",
+  "version": "1.0.0",
+  "description": "Inscripcion publica para el evento Guerra de Bocetos, respaldada por Supabase (esquema aislado del ERP de Neomech).",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
