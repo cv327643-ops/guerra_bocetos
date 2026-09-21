@@ -178,6 +178,163 @@ const PAGE = [
   "</body></html>",
 ].join("\n");
 
+const ADMIN_PAGE = [
+  "<!doctype html>",
+  '<html lang="es">',
+  "<head>",
+  '<meta charset="utf-8">',
+  '<meta name="viewport" content="width=device-width, initial-scale=1">',
+  "<title>Guerra de Bocetos — Admin</title>",
+  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">',
+  "<style>",
+  ":root{--bg:#f3efe7;--surface:#ffffff;--ink:#17161a;--ink-soft:#6b675f;--line:#17161a;--accent:#e8422a;--accent-ink:#fffaf3;--good:#1c8a53;--good-bg:#e5f5ec;--shadow:3px 3px 0 var(--line);}",
+  "@media (prefers-color-scheme: dark){:root{--bg:#141316;--surface:#1f1e22;--ink:#f3f0ea;--ink-soft:#a9a49b;--line:#f3f0ea;--accent:#ff6a52;--accent-ink:#17161a;--good:#4fd48c;--good-bg:#123024;}}",
+  "*{box-sizing:border-box;}",
+  "body{background:var(--bg);color:var(--ink);font-family:'Work Sans',system-ui,sans-serif;margin:0;padding:0 16px 48px;}",
+  ".wrap{max-width:900px;margin:0 auto;}",
+  "h1,h2{font-family:'Anton','Work Sans',sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;}",
+  ".mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}",
+  "header{padding:28px 0 10px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;}",
+  "header h1{font-size:1.7rem;margin:0;}",
+  "#gate{max-width:340px;margin:80px auto;background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:24px;box-shadow:var(--shadow);}",
+  "#gate input{width:100%;padding:10px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:1.2rem;text-align:center;letter-spacing:.2em;margin:12px 0;}",
+  "button{border:2px solid var(--line);border-radius:8px;padding:10px 16px;font-family:'Work Sans',sans-serif;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-ink);box-shadow:2px 2px 0 var(--line);text-transform:uppercase;font-size:.85rem;}",
+  "button.ghost{background:var(--surface);color:var(--ink);}",
+  "button:disabled{opacity:.5;cursor:not-allowed;}",
+  "#app{display:none;}",
+  ".toolbar{display:flex;gap:8px;margin:12px 0 20px;flex-wrap:wrap;align-items:center;}",
+  ".badge{background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.8rem;font-weight:700;}",
+  "table{width:100%;border-collapse:collapse;background:var(--surface);border:2px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}",
+  "th,td{padding:8px 10px;text-align:left;border-bottom:1px solid color-mix(in srgb, var(--ink) 15%, transparent);font-size:.85rem;vertical-align:middle;}",
+  "th{text-transform:uppercase;font-size:.68rem;color:var(--ink-soft);letter-spacing:.03em;}",
+  "tr.finalista{background:var(--good-bg);}",
+  ".prom{font-weight:700;}",
+  ".vote-row{display:flex;gap:4px;align-items:center;}",
+  ".vote-row input{width:52px;padding:6px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);text-align:center;}",
+  ".vote-row button{padding:6px 10px;font-size:.7rem;}",
+  ".small{font-size:.7rem;padding:6px 8px;}",
+  "#msg{margin:10px 0;font-size:.85rem;font-weight:600;min-height:1.2em;}",
+  "#msg.err{color:var(--accent);}",
+  "#msg.ok{color:var(--good);}",
+  ".empty{color:var(--ink-soft);font-size:.85rem;text-align:center;padding:24px;}",
+  "@media (max-width: 720px){table,thead,tbody,th,td,tr{display:block;} thead{display:none;} tr{background:var(--surface);border:2px solid var(--line);border-radius:10px;margin-bottom:10px;padding:10px;box-shadow:var(--shadow);} td{border:none;padding:4px 0;} td::before{content:attr(data-label);display:block;font-size:.65rem;text-transform:uppercase;color:var(--ink-soft);}}",
+  "</style>",
+  "</head>",
+  "<body>",
+  '<div id="gate">',
+  "<h2>Acceso admin</h2>",
+  '<input type="password" id="pin" inputmode="numeric" placeholder="PIN" autofocus>',
+  '<button style="width:100%" onclick="tryLogin()">Entrar</button>',
+  '<div id="gate-msg" style="margin-top:8px;font-size:.8rem;color:var(--accent);"></div>',
+  "</div>",
+  '<div id="app"><div class="wrap">',
+  "<header><h1>Guerra de Bocetos — Admin</h1><span class=\"badge mono\" id=\"finalistas-count\">0/8 finalistas</span></header>",
+  '<div class="toolbar">',
+  '<label style="font-size:.75rem;">Tu nombre (juez): <input id="juez" placeholder="Ej: Camilo" style="padding:6px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);"></label>',
+  '<button class="ghost" onclick="loadList()">Actualizar</button>',
+  '<a id="export-link" href="#"><button class="ghost">Descargar Excel (CSV)</button></a>',
+  "</div>",
+  '<div id="msg"></div>',
+  '<div id="table-wrap"></div>',
+  "</div></div>",
+  "<script>",
+  "var PIN = '';",
+  "function esc(s){return String(s==null?'':s).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\\'':'&#39;'}[c];});}",
+  "function setMsg(t, cls){ var m=document.getElementById('msg'); m.textContent=t||''; m.className=cls||''; }",
+  "function tryLogin(){",
+  "  var pin = document.getElementById('pin').value.trim();",
+  "  if(!pin){ return; }",
+  "  PIN = pin;",
+  "  loadList(function(ok){",
+  "    if(ok){",
+  "      document.getElementById('gate').style.display='none';",
+  "      document.getElementById('app').style.display='block';",
+  "      document.getElementById('export-link').href = '/admin/export.csv?pin=' + encodeURIComponent(PIN);",
+  "    } else {",
+  "      document.getElementById('gate-msg').textContent = 'PIN incorrecto.';",
+  "    }",
+  "  });",
+  "}",
+  "function render(participantes){",
+  "  var finalistas = participantes.filter(function(p){ return p.estado === 'finalista'; }).length;",
+  "  document.getElementById('finalistas-count').textContent = finalistas + '/8 finalistas';",
+  "  if(!participantes.length){",
+  "    document.getElementById('table-wrap').innerHTML = '<p class=\"empty\">Aun no hay inscritos.</p>';",
+  "    return;",
+  "  }",
+  "  var rows = participantes.map(function(p){",
+  "    var esFinal = p.estado === 'finalista';",
+  "    return '<tr class=\"' + (esFinal ? 'finalista' : '') + '\">' +",
+  "      '<td data-label=\"Nombre\">' + esc(p.nombre) + '<br><span class=\"mono\" style=\"font-size:.7rem;color:var(--ink-soft);\">' + esc(p.tipo_documento) + ' ' + esc(p.numero_documento) + '</span></td>' +",
+  "      '<td data-label=\"Contacto\">' + esc(p.telefono) + '<br>' + esc(p.correo) + '</td>' +",
+  "      '<td data-label=\"Ciudad\">' + esc(p.ciudad) + '</td>' +",
+  "      '<td data-label=\"Instagram\">' + (p.instagram ? esc(p.instagram) : '—') + '</td>' +",
+  "      '<td data-label=\"Promedio\" class=\"prom mono\">' + (p.promedio != null ? p.promedio : '—') + ' <span style=\"font-weight:400;color:var(--ink-soft);\">(' + p.num_votos + ')</span></td>' +",
+  "      '<td data-label=\"Votar\"><div class=\"vote-row\"><input type=\"number\" min=\"0\" max=\"10\" step=\"0.5\" id=\"score-' + p.id + '\"><button class=\"small\" onclick=\"vote(\\'' + p.id + '\\')\">Votar</button></div></td>' +",
+  "      '<td data-label=\"Finalista\"><button class=\"small ' + (esFinal ? '' : 'ghost') + '\" onclick=\"toggleFinalista(\\'' + p.id + '\\',' + (!esFinal) + ')\">' + (esFinal ? 'Quitar' : 'Marcar') + '</button></td>' +",
+  "      '</tr>';",
+  "  }).join('');",
+  "  document.getElementById('table-wrap').innerHTML =",
+  "    '<table><thead><tr><th>Nombre</th><th>Contacto</th><th>Ciudad</th><th>Instagram</th><th>Promedio</th><th>Votar (0-10)</th><th>Finalista</th></tr></thead><tbody>' + rows + '</tbody></table>';",
+  "}",
+  "function loadList(cb){",
+  "  fetch('/admin/api/list', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pin:PIN}) })",
+  "    .then(function(r){ return r.json(); })",
+  "    .then(function(res){",
+  "      if(res.ok){ render(res.participantes); if(cb) cb(true); }",
+  "      else { setMsg(res.error||'Error', 'err'); if(cb) cb(false); }",
+  "    })",
+  "    .catch(function(){ setMsg('Error de conexion.', 'err'); if(cb) cb(false); });",
+  "}",
+  "function vote(id){",
+  "  var juez = document.getElementById('juez').value.trim();",
+  "  if(!juez){ setMsg('Escribe tu nombre como juez antes de votar.', 'err'); return; }",
+  "  var input = document.getElementById('score-' + id);",
+  "  var puntaje = parseFloat(input.value);",
+  "  if(isNaN(puntaje) || puntaje < 0 || puntaje > 10){ setMsg('Puntaje invalido (0-10).', 'err'); return; }",
+  "  fetch('/admin/api/vote', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pin:PIN, participante_id:id, juez:juez, puntaje:puntaje}) })",
+  "    .then(function(r){ return r.json(); })",
+  "    .then(function(res){",
+  "      if(res.ok){ setMsg('Voto guardado.', 'ok'); loadList(); }",
+  "      else { setMsg(res.error||'Error al votar', 'err'); }",
+  "    })",
+  "    .catch(function(){ setMsg('Error de conexion.', 'err'); });",
+  "}",
+  "function toggleFinalista(id, esFinalista){",
+  "  fetch('/admin/api/finalista', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pin:PIN, participante_id:id, es_finalista:esFinalista}) })",
+  "    .then(function(r){ return r.json(); })",
+  "    .then(function(res){",
+  "      if(res.ok){ setMsg('Actualizado.', 'ok'); loadList(); }",
+  "      else { setMsg(res.error||'Error', 'err'); }",
+  "    })",
+  "    .catch(function(){ setMsg('Error de conexion.', 'err'); });",
+  "}",
+  "document.getElementById('pin').addEventListener('keydown', function(ev){ if(ev.key==='Enter') tryLogin(); });",
+  "</script>",
+  "</body></html>",
+].join("\n");
+
+function csvEscape(v) {
+  var s = v == null ? "" : String(v);
+  if (/[",\n]/.test(s)) {
+    s = '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function buildCsv(participantes) {
+  var headers = [
+    "nombre", "tipo_documento", "numero_documento", "telefono", "correo",
+    "ciudad", "instagram", "referencia_pago", "estado", "promedio", "num_votos",
+    "autoriza_imagen", "created_at",
+  ];
+  var lines = [headers.join(",")];
+  participantes.forEach(function (p) {
+    lines.push(headers.map(function (h) { return csvEscape(p[h]); }).join(","));
+  });
+  return "\uFEFF" + lines.join("\n");
+}
+
 function sendJson(res, status, data) {
   const body = JSON.stringify(data);
   res.writeHead(status, {
@@ -219,6 +376,70 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && path === "/") {
     return sendHtml(res, 200, PAGE);
+  }
+
+  if (req.method === "GET" && path === "/admin") {
+    return sendHtml(res, 200, ADMIN_PAGE);
+  }
+
+  if (req.method === "POST" && path === "/admin/api/list") {
+    let body;
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      return sendJson(res, 400, { ok: false, error: "JSON inválido" });
+    }
+    const { data, error } = await callRpc("gb_admin_list", { pin: body.pin });
+    if (error) return sendJson(res, 500, { ok: false, error: "Error del servidor" });
+    return sendJson(res, 200, data);
+  }
+
+  if (req.method === "POST" && path === "/admin/api/vote") {
+    let body;
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      return sendJson(res, 400, { ok: false, error: "JSON inválido" });
+    }
+    const { data, error } = await callRpc("gb_admin_vote", {
+      pin: body.pin,
+      p_participante_id: body.participante_id,
+      p_juez: body.juez,
+      p_puntaje: body.puntaje,
+    });
+    if (error) return sendJson(res, 500, { ok: false, error: "Error del servidor" });
+    return sendJson(res, 200, data);
+  }
+
+  if (req.method === "POST" && path === "/admin/api/finalista") {
+    let body;
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      return sendJson(res, 400, { ok: false, error: "JSON inválido" });
+    }
+    const { data, error } = await callRpc("gb_admin_set_finalista", {
+      pin: body.pin,
+      p_participante_id: body.participante_id,
+      p_es_finalista: body.es_finalista,
+    });
+    if (error) return sendJson(res, 500, { ok: false, error: "Error del servidor" });
+    return sendJson(res, 200, data);
+  }
+
+  if (req.method === "GET" && path === "/admin/export.csv") {
+    const pin = url.searchParams.get("pin") || "";
+    const { data, error } = await callRpc("gb_admin_list", { pin });
+    if (error || !data || !data.ok) {
+      res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      return res.end("PIN incorrecto o error del servidor");
+    }
+    const csv = buildCsv(data.participantes);
+    res.writeHead(200, {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": 'attachment; filename="guerra_bocetos_participantes.csv"',
+    });
+    return res.end(csv);
   }
 
   if (req.method === "GET" && path === "/stats") {
